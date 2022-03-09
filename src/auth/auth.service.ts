@@ -14,9 +14,8 @@ export class AuthService {
     private config: ConfigService,
   ) {}
   async signup(dto: AuthDto) {
-    //generate password hash
     const hash = await argon.hash(dto.password);
-    //save new user in the db
+
     try {
       const user = await this.prisma.user.create({
         data: {
@@ -25,7 +24,7 @@ export class AuthService {
         },
       });
       delete user.hash;
-      //return saved user
+
       return this.signToken(user.id, user.email);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -36,18 +35,16 @@ export class AuthService {
     }
   }
   async signin(dto: AuthDto) {
-    //find user by email
     const user = await this.prisma.user.findUnique({
       where: {
         email: dto.email,
       },
     });
-    //if user does not exist throw exception
+
     if (!user) throw new ForbiddenException('Credential Incorrect');
 
-    //compare password
     const pwMatches = await argon.verify(user.hash, dto.password);
-    //if password incorrect throw exception
+
     if (!pwMatches) throw new ForbiddenException('Credential Incorrect');
 
     return this.signToken(user.id, user.email);
